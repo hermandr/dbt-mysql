@@ -1,4 +1,44 @@
+{# Data types #}
+{%- macro mariadb__type_string() -%}
+varchar
+{%- endmacro -%}
 
+{%- macro mariadb__type_numeric() -%}
+decimal
+{%- endmacro -%}
+
+{%- macro mariadb__hash(field) -%}
+    md5(cast({{ field }} as char))
+{%- endmacro -%}
+
+{% macro mariadb__current_timestamp() -%}
+  current_timestamp 
+{%- endmacro %}
+
+{# Create Indexes #}
+{% macro mariadb__get_create_index_sql(relation, index_dict) -%}
+{% set sql %}
+    CREATE INDEX {{ relation.identifier }}_{{ index_dict.columns | join('_') }} USING BTREE ON {{ relation }} ({{ index_dict.columns | join(', ') }});
+{% endset %}
+{% do return(sql) %}
+{% endmacro %}
+
+{# persist docs #}
+{% macro mariadb__alter_column_comment(relation, column_dict) -%}
+  {{ exceptions.raise_not_implemented(
+    'alter_column_comment macro not implemented for adapter '+adapter.type()) }}
+{% endmacro %}
+
+{% macro mariadb__alter_relation_comment(relation, relation_comment) -%}
+  {%- set sql %}
+      ALTER TABLE {{ relation.identifier }}
+      COMMENT {{ relation_comment }}
+  ;
+  {%- endset %}
+  {%- do return(sql) -%}
+{% endmacro %}
+
+{# information schema related #}
 {% macro mariadb__list_schemas(database) %}
     {% call statement('list_schemas', fetch_result=True, auto_begin=False) -%}
         select distinct schema_name
