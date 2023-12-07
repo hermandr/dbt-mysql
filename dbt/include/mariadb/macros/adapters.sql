@@ -5,19 +5,23 @@ varchar
 {%- endmacro -%}
 
 {%- macro mariadb__type_numeric() -%}
+{{- log("mariadb__type_numeric", info=True) }}
 decimal
 {%- endmacro -%}
 
 {%- macro mariadb__hash(field) -%}
-    md5(cast({{ field }} as char))
+{{- log("mariadb__hash", info=True) }}
+md5(cast({{ field }} as char))
 {%- endmacro -%}
 
 {% macro mariadb__current_timestamp() -%}
-  current_timestamp 
+{{- log("mariadb__current_timestamp", info=True) }}
+current_timestamp 
 {%- endmacro %}
 
 {# core/dbt/include/global_project/macros/adapters/indexes.sql #}
 {% macro mariadb__get_create_index_sql(relation, index_dict) -%}
+{{- log("mariadb__get_create_index_sql: table:" ~ relation ~ "  columns:" ~ index_dict.columns | join(", "), info=True) }}
 {% set sql %}
     CREATE INDEX {{ relation.identifier }}_{{ index_dict.columns | join('_') }} USING BTREE ON {{ relation }} ({{ index_dict.columns | join(', ') }});
 {% endset %}
