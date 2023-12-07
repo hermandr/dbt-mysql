@@ -1,4 +1,4 @@
-{# Data types #}
+{# core/dbt/include/global_project/macros/utils/data_types.sql #}
 {%- macro mariadb__type_string() -%}
 varchar
 {%- endmacro -%}
@@ -15,7 +15,7 @@ decimal
   current_timestamp 
 {%- endmacro %}
 
-{# Create Indexes #}
+{# core/dbt/include/global_project/macros/adapters/indexes.sql #}
 {% macro mariadb__get_create_index_sql(relation, index_dict) -%}
 {% set sql %}
     CREATE INDEX {{ relation.identifier }}_{{ index_dict.columns | join('_') }} USING BTREE ON {{ relation }} ({{ index_dict.columns | join(', ') }});
@@ -23,7 +23,28 @@ decimal
 {% do return(sql) %}
 {% endmacro %}
 
-{# persist docs #}
+{# core/dbt/include/global_project/macros/relations/drop.sql #}
+{%- macro mariadb__get_drop_sql(relation) -%}
+
+    {{ log("mariadb__get_drop_sql: " ~ relation, info=True) }}
+
+    {%- if relation.is_view -%}
+        {{ drop_view(relation) }}
+
+    {%- elif relation.is_table -%}
+        {{ drop_table(relation) }}
+
+    {%- elif relation.is_materialized_view -%}
+        {{ drop_materialized_view(relation) }}
+
+    {%- else -%}
+        drop {{ relation.type }} if exists {{ relation }} cascade
+
+    {%- endif -%}
+
+{%- endmacro -%}
+
+{# core/dbt/include/global_project/macros/adapters/persist_docs.sql #}
 {% macro mariadb__alter_column_comment(relation, column_dict) -%}
   {{ exceptions.raise_not_implemented(
     'alter_column_comment macro not implemented for adapter '+adapter.type()) }}
@@ -39,13 +60,21 @@ decimal
 {% endmacro %}
 
 {# information schema related #}
-{% macro mariadb__list_schemas(database) %}
-    {% call statement('list_schemas', fetch_result=True, auto_begin=False) -%}
-        select distinct schema_name
-        from information_schema.schemata
-    {%- endcall %}
+{# core/dbt/include/global_project/macros/adapters/metadata.sql #}
+{% macro mariadb__information_schema_name(database) -%}
+  {{- log("information_schema_name:   database_name: " ~ database_name ~ "  database: " ~ database, info=True) -}}
+  information_schema
+{%- endmacro %}
 
-    {{ return(load_result('list_schemas').table) }}
+{# dbt/include/mariadb/macros/adapters.sql #}
+{% macro mariadb__list_schemas(database) %}
+  {{- log("list_schemas:   database_name: " ~ database_name ~ "  database: " ~ database, info=True) -}}
+  {% call statement('list_schemas', fetch_result=True, auto_begin=False) -%}
+    select distinct schema_name
+    from {{ information_schema_name(database) }}.schemata
+  {%- endcall %}
+
+  {{ return(load_result('list_schemas').table) }}
 {% endmacro %}
 
 {% macro mariadb__create_schema(relation) -%}
