@@ -1,5 +1,6 @@
 {# core/dbt/include/global_project/macros/utils/data_types.sql #}
 {%- macro mariadb__type_string() -%}
+{{- log("mariadb__type_string", info=True) }}
 varchar
 {%- endmacro -%}
 
